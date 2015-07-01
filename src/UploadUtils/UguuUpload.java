@@ -55,8 +55,6 @@ public final class UguuUpload {
         HttpURLConnection connection = connect();
         sendFile(bytes,connection);
         getResponse(connection);
-
-
     }   
     
     /**

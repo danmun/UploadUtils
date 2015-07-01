@@ -214,6 +214,5 @@ public final class ImgurUpload {
             throw ex;
         } 
         return (BufferedImage) img;
-    }    
-    
+    }
 }
