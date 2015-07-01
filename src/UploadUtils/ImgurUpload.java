@@ -34,7 +34,7 @@ public final class ImgurUpload {
     private static String imgurl;
     
     /**
-     * Create a new uploader object.
+     * Set a KEY you will use to identify yourself to Imgur.
      * @param API_KEY the API key used when connecting to Imgur, upload will only succeed if this is a valid key
      */
     public static void SET_API_KEY(String API_KEY){
