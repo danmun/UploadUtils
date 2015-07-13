@@ -28,6 +28,8 @@ import java.awt.Toolkit;
 import java.io.Reader;
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Utility class for uploading to Uguu
@@ -36,12 +38,20 @@ import java.net.URL;
 public final class UguuUpload {
     
     private static final String boundary = "---------------------------" + System.currentTimeMillis();
+    private static final List<ImagelinkListener> listeners = new ArrayList<>();
     private static final String UGUU_URI = "http://uguu.se/api.php?d=upload";
     private static final String tmpfiletype = "file/";
     private static String extension;
     private static String filename;
-    private static String uguurl;
 
+    /**
+     * Add an image link listener.
+     * @param ll the link listener to be added
+     */
+    public static void addImagelinkListener(ImagelinkListener ll){
+        listeners.add(ll);
+    }
+    
     /**
      * Upload file.
      * @param f the file to upload
@@ -181,28 +191,20 @@ public final class UguuUpload {
         writer.close();
         reader.close();
         reader.close();
-        uguurl = response;
+        for(ImagelinkListener ll: listeners){
+            ll.onImageLink(response);
+        }
     }
 
     /**
      * Copy image link to user's clipboard.
-     * This method should only be called once the upload has finished and the image link has been verified to be a valid URL.
+     * This method could be called in onImageLink(String link) to copy the link to the user's clipboard.
+     * @param link the string to copy to the clipboard
      */
-    public static void copyToClipBoard(){
+    public static void copyToClipBoard(String link){
         Toolkit toolkit = Toolkit.getDefaultToolkit();
         Clipboard clipboard = toolkit.getSystemClipboard();
-        StringSelection selection = new StringSelection(uguurl);
+        StringSelection selection = new StringSelection(link);
         clipboard.setContents(selection,null);
-    }
-    
-    /**
-     * Get the uploaded file's link.
-     * This method will return a null if called before the upload finishes,
-     * or if there was an error during upload (such as a connection problem).
-     * If used in a SwingWorker environment, this method should be called in the 'done()' method.
-     * @return the link as a standard URL
-     */
-    public static String getFileLink(){
-        return uguurl;
     }
 }

@@ -19,8 +19,10 @@ import java.net.URLConnection;
 import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.awt.Toolkit;
 import java.awt.Image;
+import java.util.List;
 import java.io.File;
 import java.net.URL;
 
@@ -30,15 +32,23 @@ import java.net.URL;
  */
 public final class ImgurUpload {
     private static final String IMGUR_POST_URI = "https://api.imgur.com/3/image.json";
+    private static final List<ImagelinkListener> listeners = new ArrayList<>();
     private static String IMGUR_API_KEY;
-    private static String imgurl;
-    
+        
     /**
      * Set a KEY you will use to identify yourself to Imgur.
      * @param API_KEY the API key used when connecting to Imgur, upload will only succeed if this is a valid key
      */
     public static void SET_API_KEY(String API_KEY){
         IMGUR_API_KEY = API_KEY;
+    }
+    
+    /**
+     * Add an image link listener.
+     * @param ll the link listener to be added
+     */
+    public static void addImagelinkListener(ImagelinkListener ll){
+        listeners.add(ll);
     }
     
     /**
@@ -162,6 +172,7 @@ public final class ImgurUpload {
         String filetype = "";
         int startindex = response.indexOf("http");
         int endindex = 0;
+        // will write a better way to parse, this is unreliable, too much "hard-coding", not generic enough
         if(response.contains(".png")){
             endindex = response.indexOf(".png");
             filetype = ".png";
@@ -175,29 +186,22 @@ public final class ImgurUpload {
             url[index] = response.charAt(i);
             index++;
         }
-        imgurl = String.valueOf(url) + filetype;
+        String imgurl = String.valueOf(url) + filetype;
+        for(ImagelinkListener ll : listeners){
+            ll.onImageLink(imgurl);
+        }
     }
     
     /**
      * Copy image link to user's clipboard.
-     * This method should only be called once the upload has finished and the image link has been verified to be a valid URL.
+     * This method could be called in onImageLink(String link) to copy the link to the user's clipboard.
+     * @param imgurl the string to copy to the clipboard
      */
-    public static void copyToClipBoard(){
+    public static void copyToClipBoard(String imgurl){
         Toolkit toolkit = Toolkit.getDefaultToolkit();
         Clipboard clipboard = toolkit.getSystemClipboard();
         StringSelection selection = new StringSelection(imgurl);
         clipboard.setContents(selection,null);
-    }
-    
-    /**
-     * Get the uploaded image's link.
-     * This method will return a null if called before the upload finishes,
-     * or if there was an error during upload (such as a connection problem).
-     * If used in a SwingWorker environment, this method should be called in the 'done()' method.
-     * @return the link as a standard URL
-     */
-    public static String getImageLink(){
-        return imgurl;
     }
     
     /**
