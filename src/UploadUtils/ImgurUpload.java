@@ -25,6 +25,8 @@ import java.awt.Image;
 import java.util.List;
 import java.io.File;
 import java.net.URL;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Utility class for uploading to Imgur.
@@ -169,24 +171,9 @@ public final class ImgurUpload {
      * @param response the image link resulting from the upload
      */
     private static void parseResponse(String response){
-        String filetype = "";
-        int startindex = response.indexOf("http");
-        int endindex = 0;
-        // will write a better way to parse, this is unreliable, too much "hard-coding", not generic enough
-        if(response.contains(".png")){
-            endindex = response.indexOf(".png");
-            filetype = ".png";
-        }else if(response.contains(".jpg")){
-            endindex = response.indexOf(".jpg");
-            filetype = ".jpg";
-        }
-        char[] url = new char[endindex - startindex];
-        int index = 0;
-        for(int i = startindex; i < endindex; i++){
-            url[index] = response.charAt(i);
-            index++;
-        }
-        String imgurl = String.valueOf(url) + filetype;
+        JSONObject jsn = new JSONObject(response);
+        JSONObject data = (JSONObject) jsn.get("data");
+        String imgurl = (String) data.getString("link");
         for(ImagelinkListener ll : listeners){
             ll.onImageLink(imgurl);
         }
