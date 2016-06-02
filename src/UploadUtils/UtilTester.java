@@ -16,12 +16,11 @@ import java.io.IOException;
 public class UtilTester {
     public static void main(String args[]) throws IOException{
         
-       // if(true) return;
-        File file = new File("D:wat1.gif");
+        File file = new File(path to file to be uploaded);
         int i = 4;
         
         // Set up Imgur uploader
-        ImgurUpload.SET_API_KEY("API_KEY_HERE");
+        ImgurUpload.SET_API_KEY(imgur api key goes here);
         ImgurUpload.addImagelinkListener(new ImagelinkListener() {
             @Override
             public void onImageLink(String link){
