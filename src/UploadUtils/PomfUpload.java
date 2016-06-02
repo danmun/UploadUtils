@@ -5,6 +5,7 @@
  */
 package UploadUtils;
 
+import java.awt.Image;
 import java.awt.datatransfer.StringSelection;
 import org.apache.commons.io.FilenameUtils;
 import java.awt.datatransfer.Clipboard;
@@ -25,23 +26,35 @@ import java.io.StringWriter;
 import java.io.InputStream;
 import java.io.IOException;
 import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.Reader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import javax.imageio.ImageIO;
+import javax.net.ssl.SSLHandshakeException;
+import org.apache.commons.codec.binary.Base64;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
  * Utility class for uploading to Uguu
  * @author Daniel Munkacsi
  */
-public final class UguuUpload {
+public final class PomfUpload {
     
-    private static final String boundary = "---------------------------" + System.currentTimeMillis();
+    private static final String boundary = "WebKitFormBoundaryZtcg4u85ATPRDWba";
     private static final List<ImagelinkListener> listeners = new ArrayList<>();
-    private static final String UGUU_URI = "https://uguu.se/api.php?d=upload-tool";
+    private static final String POMF_URI = "https://pomf.cat/upload.php";
+    private static final String POMF_FRONT_END_URI = "https://a.pomf.cat/";
     private static final String tmpfiletype = "file/";
     private static String extension;
     private static String filename;
@@ -63,11 +76,13 @@ public final class UguuUpload {
         String fullname = f.getName();
         extension = FilenameUtils.getExtension(fullname);
         filename = FilenameUtils.getBaseName(fullname);
+        p(filename);
         byte[] bytes = fileToBytes(f); 
         HttpURLConnection connection = connect();
         sendFile(bytes,connection);
         String response = getResponse(connection);
-    }   
+        parseResponse(response);
+    }
     
     /**
      * Convert the file to byte array.
@@ -80,7 +95,7 @@ public final class UguuUpload {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             BufferedInputStream in = new BufferedInputStream(new FileInputStream(f));
             int read;
-            byte[] buff = new byte[2048];
+            byte[] buff = new byte[1024];
             while ((read = in.read(buff)) > 0){
                 out.write(buff, 0, read);
             }   filebytes = out.toByteArray();
@@ -94,14 +109,14 @@ public final class UguuUpload {
     }
     
     /**
-     * Connect to Uguu.
+     * Connect to Pomf.
      * @throws java.IOException while attempting to connect, can also be of type ProtocolException if given protocol is not supported
      */
     private static HttpURLConnection connect() throws IOException{
         HttpURLConnection conn = null;
         URL url = null;
         try {
-            url = new URL(UGUU_URI);
+            url = new URL(POMF_URI);
         } catch (MalformedURLException ex) {
             Logger.getLogger(UguuUpload.class.getName()).log(Level.SEVERE, null, ex);
             return null;
@@ -119,14 +134,22 @@ public final class UguuUpload {
         } catch (ProtocolException ex) {
             throw ex;
         }
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:38.0) Gecko/20100101 Firefox/38.0");
+//      conn.setRequestProperty("Host","pomf.cat");
+        conn.setRequestProperty("Connection", "keep-alive");
+//        conn.setRequestProperty("Content-Length", "3423");
+//        conn.setRequestProperty("Origin", "https://pomf.cat");  
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36");
+        conn.setRequestProperty("Content-Type","multipart/form-data; boundary=----" + boundary);
         conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+//        conn.setRequestProperty("Referer", "https://pomf.cat/");  
         conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
-        conn.setRequestProperty("Connection", "Keep-Alive");
-        conn.setRequestProperty("Content-Type","multipart/form-data; boundary=" + boundary);
-	
+//        conn.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+//      conn.setRequestProperty("Cookie", "__cfduid=d46abf9b3f58e7a7344d431ad0230f29b1439947653");
         return conn;
+    }
+    
+    public static void p(String s){
+        System.out.println(s);
     }
     
     /**
@@ -135,42 +158,39 @@ public final class UguuUpload {
      * @param conn the connection to use
      * @throws java.IOException during writing to output stream
      */
-    private static void sendFile(byte[] b, HttpURLConnection conn) throws IOException{
-        String first = String.format("Content-Type: multipart/form-data; boundary=" + boundary +"\"\r\nContent-Length: 30721\r\n");
-        String second = String.format("Content-Disposition: form-data; name=\"MAX_FILE_SIZE\"\r\n\r\n" + "100000000\r\n");
-        String data = String.format("Content-Disposition: form-data; name=\"file\";filename=\"" + filename + "." + extension +"\"\r\nContent-type:" + tmpfiletype + "\r\n");
-        String last = String.format("Content-Disposition: form-data; name=\"name\"");
+    private static void sendFile(byte[] b, HttpURLConnection conn) throws IOException{        
+        System.out.println("entered sendfile");
+        String introline = "------"+boundary;
+        String padder = String.format("Content-Disposition: form-data; name=\"files[]\"; filename=\"" + filename + "." + extension +"\"\r\nContent-type: " + tmpfiletype + "\r\n");
+        String outroline = "------"+boundary+"--";
+               
         ByteArrayInputStream bais = new ByteArrayInputStream(b);
         DataOutputStream outstream;
         try {
             outstream = new DataOutputStream(conn.getOutputStream());
-            outstream.writeBytes(first);
+            outstream.writeBytes(introline);
             outstream.writeBytes("\r\n");
-            outstream.writeBytes("\r\n");
-            
-            outstream.writeBytes("--" + boundary);
-            outstream.writeBytes(second);
-            outstream.writeBytes("--" + boundary + "\r\n");
-            
-            outstream.writeBytes(data);
+            outstream.writeBytes(padder);
             outstream.writeBytes("\r\n");
             
             int i;
             while ((i = bais.read()) > -1){
                 outstream.write(i);
+                
             }
             bais.close();
-            outstream.writeBytes("\r\n");
-            outstream.writeBytes("--" + boundary + "\r\n");
-            outstream.writeBytes(last);
+            
             outstream.writeBytes("\r\n");
             outstream.writeBytes("\r\n");
-            outstream.writeBytes("\r\n");
-            outstream.writeBytes( "--" + boundary + "--");
+            outstream.writeBytes(outroline);
             outstream.flush();
             outstream.close();
-        } catch (IOException ex) {
-            throw ex;
+        }catch(IOException ex){
+            if(ex instanceof SSLHandshakeException){
+                ex.printStackTrace();
+            }else{
+                throw ex;
+            }
         }
     }
     
@@ -204,11 +224,12 @@ public final class UguuUpload {
      * @param response the image link resulting from the upload
      */
     private static void parseResponse(String response){
-        JSONObject jsn = new JSONObject(response);
-        JSONObject data = (JSONObject) jsn.get("data");
-        String imgurl = (String) data.getString("link");
+        JSONObject outerjson = new JSONObject(response);
+        JSONArray jsnarray = (JSONArray) outerjson.get("files");
+        JSONObject innerjson = (JSONObject) jsnarray.get(0);
+        String url = POMF_FRONT_END_URI + innerjson.get("url").toString();
         for(ImagelinkListener ll : listeners){
-            ll.onImageLink(imgurl);
+            ll.onImageLink(url);
         }
     }    
     

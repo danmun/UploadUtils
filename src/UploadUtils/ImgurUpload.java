@@ -69,6 +69,18 @@ public final class ImgurUpload {
     }
     
     /**
+     * Upload image denoted by web path.
+     * @param url the path to the image on the web
+     * @throws IOException 
+     */
+    public static void upload(String url) throws IOException{
+        URLConnection connection = connect();
+        sendImage(connection,url);
+        String s = getResponse(connection);
+        parseResponse(s);
+    }    
+    
+    /**
      * Write image to bytes.
      * @param imgToUpload the image to be written to bytes
      * @return the output stream containing image data
