@@ -14,13 +14,13 @@ import java.io.IOException;
  * @author Daniel Munkacsi
  */
 public class UtilTester {
-    public static void main(String args[]) throws IOException{
+    public static void test(String args[]) throws IOException{
         
-        File file = new File(path to file to be uploaded);
+        File file = new File("path to file here");
         int i = 4;
         
         // Set up Imgur uploader
-        ImgurUpload.SET_API_KEY(imgur api key goes here);
+        ImgurUpload.SET_API_KEY("api key here");
         ImgurUpload.addImagelinkListener(new ImagelinkListener() {
             @Override
             public void onImageLink(String link){

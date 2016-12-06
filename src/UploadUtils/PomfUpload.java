@@ -5,7 +5,6 @@
  */
 package UploadUtils;
 
-import java.awt.Image;
 import java.awt.datatransfer.StringSelection;
 import org.apache.commons.io.FilenameUtils;
 import java.awt.datatransfer.Clipboard;
@@ -26,22 +25,12 @@ import java.io.StringWriter;
 import java.io.InputStream;
 import java.io.IOException;
 import java.awt.Toolkit;
-import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.Reader;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
-import javax.imageio.ImageIO;
 import javax.net.ssl.SSLHandshakeException;
-import org.apache.commons.codec.binary.Base64;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -76,7 +65,6 @@ public final class PomfUpload {
         String fullname = f.getName();
         extension = FilenameUtils.getExtension(fullname);
         filename = FilenameUtils.getBaseName(fullname);
-        p(filename);
         byte[] bytes = fileToBytes(f); 
         HttpURLConnection connection = connect();
         sendFile(bytes,connection);
